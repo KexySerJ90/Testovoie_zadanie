@@ -30,7 +30,7 @@ def test_parse_args():
     """
     sys_argv = ['--file', 'file1.log', 'file2.log', '--report', 'average', '--date', '2025-06-24']
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr('sys.argv', ['script.py'] + sys_argv)
+        mp.setattr('sys.argv', ['main.py'] + sys_argv)
         args = parse_args()
         assert args.file == ['file1.log', 'file2.log']
         assert args.report == 'average'
@@ -102,12 +102,10 @@ def test_read_log_average_with_date(temp_log_file):
     assert '/api' in stats
     assert stats['/api']['total'] == 1
 
+
 def test_read_log_file_not_found():
     """Тестирует обработку отсутствия файла.
-
-    Проверяет, что функция корректно обрабатывает ситуацию, когда:
-    - Указанный файл не существует
-    - Возвращает пустой результат
+    Проверяет, что функция корректно обрабатывает ситуацию, когда указанный файл не существует
     """
     result = list(read_log(['nonexistent.log'], 'average'))
     assert len(result) == 0
@@ -119,7 +117,6 @@ def test_generate_data():
     Проверяет:
     - Правильность сортировки по количеству запросов
     - Корректность расчета среднего времени
-    - Формат выходных данных
     """
     test_stats = {
         '/test': {'total': 2, 'time': 0.3},
@@ -141,7 +138,6 @@ def test_print_report_average(capsys, temp_log_file):
     Проверяет:
     - Наличие обязательных заголовков в выводе
     - Присутствие ожидаемых данных в выводе
-    - Общую структуру вывода
     """
     stats = read_log([temp_log_file], 'average')
     data = generate_data_average(stats)
@@ -150,4 +146,3 @@ def test_print_report_average(capsys, temp_log_file):
     assert 'handler' in captured.out
     assert 'avg_response_time' in captured.out
     assert '/test' in captured.out
-
