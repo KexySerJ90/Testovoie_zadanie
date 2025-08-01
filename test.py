@@ -1,6 +1,6 @@
 import pytest
 from datetime import date, datetime
-from main import parse_args, read_log_and_generate_data, parse_date, print_report
+from main import parse_args, read_log, generate_data, parse_date, print_report
 
 # Тестовые данные
 TEST_LOGS = [
@@ -66,53 +66,74 @@ def test_parse_date_none():
     assert parse_date(None) is None
 
 
-def test_read_log_and_generate_data_average(temp_log_file):
-    """Тестирует генерацию отчета 'average' без фильтрации по дате.
+def test_read_log_average(temp_log_file):
+    """Тестирует чтение логов и сбор статистики для отчета 'average' без фильтрации по дате.
 
     Проверяет:
-    - Количество обработанных URL
-    - Правильность сортировки по количеству запросов
-    - Корректность расчета среднего времени ответа
+    - Корректность сбора статистики по URL
+    - Правильность подсчета количества запросов
+    - Корректность суммирования времени ответа
     """
-    result = list(read_log_and_generate_data([temp_log_file], 'average'))
-    assert len(result) == 2  # Должно быть 2 URL (/test и /api)
-    assert result[0][1] == '/test'  # Первый должен быть /test (больше запросов)
-    assert result[0][2] == 2  # 2 запроса для /test
-    assert result[1][1] == '/api'  # Второй /api
-    assert result[1][2] == 1  # 1 запрос для /api
-    assert float(result[0][3]) == pytest.approx(0.15)
-    assert float(result[1][3]) == pytest.approx(0.3)
+    stats = read_log([temp_log_file], 'average')
+    assert len(stats) == 2  # Должно быть 2 URL (/test и /api)
+    assert '/test' in stats
+    assert '/api' in stats
+    assert stats['/test']['total'] == 2  # 2 запроса для /test
+    assert stats['/api']['total'] == 1  # 1 запрос для /api
+    assert stats['/test']['time'] == pytest.approx(0.3)  # 0.1 + 0.2
+    assert stats['/api']['time'] == pytest.approx(0.3)  # 0.3
 
 
-def test_read_log_and_generate_data_average_with_date(temp_log_file):
-    """Тестирует генерацию отчета 'average' с фильтрацией по дате.
+def test_read_log_average_with_date(temp_log_file):
+    """Тестирует чтение логов с фильтрацией по дате.
 
     Проверяет:
     - Корректность фильтрации записей по дате
-    - Правильность результатов после фильтрации
+    - Правильность статистики после фильтрации
     """
     target_date = datetime.strptime('2023-01-01', '%Y-%m-%d').date()
-    result = list(read_log_and_generate_data([temp_log_file], 'average', target_date))
-    assert len(result) == 1
-    assert result[0][1] == '/test'
-    assert result[0][2] == 2
+    stats = read_log([temp_log_file], 'average', target_date)
+    assert len(stats) == 1
+    assert '/test' in stats
+    assert stats['/test']['total'] == 2
 
     target_date = datetime.strptime('2023-01-02', '%Y-%m-%d').date()
-    result = list(read_log_and_generate_data([temp_log_file], 'average', target_date))
-    assert len(result) == 1
-    assert result[0][1] == '/api'
-    assert result[0][2] == 1
+    stats = read_log([temp_log_file], 'average', target_date)
+    assert len(stats) == 1
+    assert '/api' in stats
+    assert stats['/api']['total'] == 1
 
-
-def test_read_log_and_generate_data_file_not_found():
+def test_read_log_file_not_found():
     """Тестирует обработку отсутствия файла.
 
     Проверяет, что функция корректно обрабатывает ситуацию, когда:
     - Указанный файл не существует
     - Возвращает пустой результат
     """
-    result = list(read_log_and_generate_data(['nonexistent.log'], 'average'))
+    result = list(read_log(['nonexistent.log'], 'average'))
     assert len(result) == 0
+
+
+def test_generate_data():
+    """Тестирует генерацию данных для отчета из собранной статистики.
+
+    Проверяет:
+    - Правильность сортировки по количеству запросов
+    - Корректность расчета среднего времени
+    - Формат выходных данных
+    """
+    test_stats = {
+        '/test': {'total': 2, 'time': 0.3},
+        '/api': {'total': 1, 'time': 0.3}
+    }
+    result = list(generate_data(test_stats))
+    assert len(result) == 2
+    assert result[0][1] == '/test'  # Первый должен быть /test (больше запросов)
+    assert result[0][2] == 2
+    assert float(result[0][3]) == pytest.approx(0.15)  # 0.3 / 2
+    assert result[1][1] == '/api'
+    assert result[1][2] == 1
+    assert float(result[1][3]) == pytest.approx(0.3)  # 0.3 / 1
 
 
 def test_print_report_average(capsys, temp_log_file):
@@ -123,11 +144,11 @@ def test_print_report_average(capsys, temp_log_file):
     - Присутствие ожидаемых данных в выводе
     - Общую структуру вывода
     """
-    data = read_log_and_generate_data([temp_log_file], 'average')
+    stats = read_log([temp_log_file], 'average')
+    data = generate_data(stats)
     print_report(data, 'average')
     captured = capsys.readouterr()
     assert 'handler' in captured.out
     assert 'avg_response_time' in captured.out
     assert '/test' in captured.out
-
 
