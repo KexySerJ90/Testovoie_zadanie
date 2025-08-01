@@ -36,7 +36,7 @@ def read_log_and_generate_data(file_paths, report_type, target_date=None):
                             # Другая логика
                             pass
                     except json.JSONDecodeError:
-                        print(f"Невозможно спарсить линию файла {line}:{f}")
+                        print(f"Ошибка парсинга JSON в строке файла {f}:{line}")
                         continue
         except FileNotFoundError:
             print(f"Файл не найден: {f}")
