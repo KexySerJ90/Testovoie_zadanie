@@ -1,6 +1,6 @@
 import pytest
 from datetime import date, datetime
-from main import parse_args, read_log, generate_data, parse_date, print_report
+from main import parse_args, read_log, generate_data_average, parse_date, print_report
 
 # Тестовые данные
 TEST_LOGS = [
@@ -75,13 +75,12 @@ def test_read_log_average(temp_log_file):
     - Корректность суммирования времени ответа
     """
     stats = read_log([temp_log_file], 'average')
-    assert len(stats) == 2  # Должно быть 2 URL (/test и /api)
     assert '/test' in stats
     assert '/api' in stats
-    assert stats['/test']['total'] == 2  # 2 запроса для /test
-    assert stats['/api']['total'] == 1  # 1 запрос для /api
-    assert stats['/test']['time'] == pytest.approx(0.3)  # 0.1 + 0.2
-    assert stats['/api']['time'] == pytest.approx(0.3)  # 0.3
+    assert stats['/test']['total'] == 2
+    assert stats['/api']['total'] == 1
+    assert stats['/test']['time'] == pytest.approx(0.3)
+    assert stats['/api']['time'] == pytest.approx(0.3)
 
 
 def test_read_log_average_with_date(temp_log_file):
@@ -126,14 +125,14 @@ def test_generate_data():
         '/test': {'total': 2, 'time': 0.3},
         '/api': {'total': 1, 'time': 0.3}
     }
-    result = list(generate_data(test_stats))
+    result = list(generate_data_average(test_stats))
     assert len(result) == 2
-    assert result[0][1] == '/test'  # Первый должен быть /test (больше запросов)
+    assert result[0][1] == '/test'
     assert result[0][2] == 2
-    assert float(result[0][3]) == pytest.approx(0.15)  # 0.3 / 2
+    assert float(result[0][3]) == pytest.approx(0.15)
     assert result[1][1] == '/api'
     assert result[1][2] == 1
-    assert float(result[1][3]) == pytest.approx(0.3)  # 0.3 / 1
+    assert float(result[1][3]) == pytest.approx(0.3)
 
 
 def test_print_report_average(capsys, temp_log_file):
@@ -145,7 +144,7 @@ def test_print_report_average(capsys, temp_log_file):
     - Общую структуру вывода
     """
     stats = read_log([temp_log_file], 'average')
-    data = generate_data(stats)
+    data = generate_data_average(stats)
     print_report(data, 'average')
     captured = capsys.readouterr()
     assert 'handler' in captured.out

@@ -50,7 +50,7 @@ def read_log(file_paths:list, report_type:str, target_date=None)->dict:
     return end_stats
 
 
-def generate_data(end_stats:dict):
+def generate_data_average(end_stats:dict):
     """Генерирует данные для отчета из собранной статистики.
     """
     for i, (url, stats) in enumerate(
@@ -87,7 +87,7 @@ def main():
     if args.date and not target_date:
         return
     log = read_log(args.file, args.report, target_date)
-    data=generate_data(log)
+    data=generate_data_average(log)
     print_report(data, args.report)
 
 
