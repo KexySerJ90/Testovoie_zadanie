@@ -22,4 +22,5 @@
     '{"@timestamp": "2023-01-02T12:00:00", "url": "/api", "response_time": 0.3}\n',
     'invalid json line\n'
 ]`
+
 Имеются скриншоты примеров запуска
